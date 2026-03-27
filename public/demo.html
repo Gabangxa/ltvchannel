@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LTVChannel — Demo Dashboard</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <a href="/" class="nav-brand" style="text-decoration:none;">LTV<span>Channel</span></a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/docs">Docs</a>
+    <a href="/demo" style="color:var(--green);font-weight:600;">Dashboard</a>
+  </div>
+</nav>
+
+<!-- Demo banner -->
+<div class="demo-banner">
+  Demo mode — this is sample data. <a href="#connect">Connect your Stripe</a> to see your real numbers.
+</div>
+
+<!-- React root -->
+<div id="root"></div>
+
+<!-- CDN deps — no build step -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+<script>
+'use strict';
+
+const { useState, useEffect, useRef, createElement: h } = React;
+
+// ── Helpers ────────────────────────────────────────────────────────────
+const fmt = (n) => '$' + Number(n).toLocaleString();
+const fmtK = (n) => n >= 1000 ? '$' + (n / 1000).toFixed(1) + 'k' : fmt(n);
+
+const CHANNEL_COLORS = {
+  'organic-seo':  '#16a34a',
+  'twitter-ads':  '#7c3aed',
+  'product-hunt': '#ea580c',
+  'referral':     '#0891b2',
+  'direct':       '#64748b',
+};
+
+function channelColor(name) {
+  return CHANNEL_COLORS[name] || '#94a3b8';
+}
+
+// ── StatCard ──────────────────────────────────────────────────────────
+function StatCard({ icon, label, value, sub }) {
+  return h('div', { className: 'stat-card' },
+    h('div', { className: 'stat-icon' }, icon),
+    h('div', null,
+      h('div', { className: 'stat-label' }, label),
+      h('div', { className: 'stat-value' }, value),
+      sub && h('div', { className: 'stat-sub' }, sub)
+    )
+  );
+}
+
+// ── LTV Badge ────────────────────────────────────────────────────────
+function LtvBadge({ avgLtv, globalAvg }) {
+  const diff = avgLtv - globalAvg;
+  const pct  = ((diff / globalAvg) * 100).toFixed(0);
+  const above = diff >= 0;
+  return h('span', { className: 'badge ' + (above ? 'badge-green' : 'badge-red') },
+    (above ? '+' : '') + pct + '%'
+  );
+}
+
+// ── Table ─────────────────────────────────────────────────────────────
+function ChannelTable({ channels, globalAvg }) {
+  const [sortKey, setSortKey] = useState('avgLtv');
+  const [sortDir, setSortDir] = useState('desc');
+
+  function handleSort(key) {
+    if (key === sortKey) {
+      setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
+  }
+
+  const sorted = [...channels].sort((a, b) => {
+    const av = a[sortKey], bv = b[sortKey];
+    const cmp = typeof av === 'string' ? av.localeCompare(bv) : av - bv;
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+
+  function thLabel(key, label) {
+    const active = sortKey === key;
+    const arrow  = active ? (sortDir === 'desc' ? ' ↓' : ' ↑') : '';
+    return h('th', {
+      onClick: () => handleSort(key),
+      style: { color: active ? 'var(--navy)' : undefined }
+    }, label + arrow);
+  }
+
+  return h('div', { className: 'table-card' },
+    h('div', { className: 'table-header' },
+      h('h2', null, 'Channel LTV Ranking'),
+      h('span', { className: 'sort-hint' }, 'Click columns to sort')
+    ),
+    h('div', { style: { overflowX: 'auto' } },
+      h('table', { className: 'ltv-table' },
+        h('thead', null,
+          h('tr', null,
+            thLabel('name', 'Channel'),
+            thLabel('avgLtv', 'Avg LTV'),
+            thLabel('avgTenureMonths', 'Avg Tenure'),
+            thLabel('totalRevenue', 'Total Revenue'),
+            thLabel('customerCount', 'Customers'),
+            h('th', null, 'LTV vs Avg')
+          )
+        ),
+        h('tbody', null,
+          sorted.map(ch =>
+            h('tr', { key: ch.name },
+              h('td', null,
+                h('div', { className: 'channel-name' },
+                  h('div', {
+                    className: 'channel-dot',
+                    style: { background: channelColor(ch.name) }
+                  }),
+                  ch.name
+                )
+              ),
+              h('td', null, fmt(ch.avgLtv)),
+              h('td', null, ch.avgTenureMonths.toFixed(1) + ' mo'),
+              h('td', null, fmtK(ch.totalRevenue)),
+              h('td', null, ch.customerCount),
+              h('td', null, h(LtvBadge, { avgLtv: ch.avgLtv, globalAvg }))
+            )
+          )
+        )
+      )
+    )
+  );
+}
+
+// ── Chart ─────────────────────────────────────────────────────────────
+function LtvChart({ channels, globalAvg }) {
+  const canvasRef = useRef(null);
+  const chartRef  = useRef(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    if (chartRef.current) chartRef.current.destroy();
+
+    const sorted = [...channels].sort((a, b) => a.avgLtv - b.avgLtv);
+    const labels = sorted.map(c => c.name);
+    const data   = sorted.map(c => c.avgLtv);
+    const colors = sorted.map(c => c.avgLtv >= globalAvg ? '#22c55e' : '#ef4444');
+
+    chartRef.current = new Chart(canvasRef.current, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Avg LTV ($)',
+          data,
+          backgroundColor: colors,
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ' $' + Number(ctx.raw).toLocaleString()
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: '#f1f5f9' },
+            ticks: {
+              callback: v => '$' + v,
+              font: { size: 11 }
+            }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { font: { size: 12 } }
+          }
+        }
+      }
+    });
+
+    return () => { if (chartRef.current) chartRef.current.destroy(); };
+  }, [channels, globalAvg]);
+
+  return h('div', { className: 'chart-card' },
+    h('h2', null, 'Avg LTV by Channel'),
+    h('div', { className: 'chart-wrapper' },
+      h('canvas', { ref: canvasRef })
+    )
+  );
+}
+
+// ── ConnectCard ───────────────────────────────────────────────────────
+function ConnectCard() {
+  const [key, setKey]         = useState('');
+  const [status, setStatus]   = useState(null); // null | 'success' | 'error'
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleConnect(e) {
+    e.preventDefault();
+    if (!key.trim()) { setStatus('error'); setMessage('Please enter a Stripe API key.'); return; }
+    setLoading(true);
+    try {
+      const res  = await fetch('/api/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stripeKey: key.trim() })
+      });
+      const data = await res.json();
+      setStatus(data.status === 'connected' ? 'success' : 'error');
+      setMessage(data.message || 'Unknown response');
+    } catch {
+      setStatus('error');
+      setMessage('Network error — please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return h('div', { className: 'connect-card', id: 'connect' },
+    h('h2', null, 'Connect your Stripe account'),
+    h('p', null, 'Analyzing demo data. Connect your Stripe to analyze your real customers.'),
+    h('form', { className: 'connect-form', onSubmit: handleConnect },
+      h('input', {
+        type: 'text',
+        placeholder: 'sk_live_...',
+        value: key,
+        onChange: e => { setKey(e.target.value); setStatus(null); },
+        autoComplete: 'off',
+        spellCheck: false,
+      }),
+      h('button', { type: 'submit', className: 'btn btn-green', disabled: loading },
+        loading ? 'Connecting...' : 'Connect Stripe →'
+      )
+    ),
+    h('p', { className: 'connect-note' }, '🔒 We only request read-only access to your customer and subscription data.'),
+    status && h('div', { className: 'connect-result ' + status }, message)
+  );
+}
+
+// ── Dashboard App ─────────────────────────────────────────────────────
+function Dashboard() {
+  const [data, setData]     = useState(null);
+  const [error, setError]   = useState(null);
+
+  useEffect(() => {
+    fetch('/api/demo-data')
+      .then(r => r.json())
+      .then(setData)
+      .catch(() => setError('Failed to load demo data.'));
+  }, []);
+
+  if (error) {
+    return h('div', { className: 'dashboard-container' },
+      h('p', { style: { color: 'var(--red)' } }, error)
+    );
+  }
+
+  if (!data) {
+    return h('div', { className: 'dashboard-container' },
+      h('p', { style: { color: 'var(--gray4)' } }, 'Loading demo data…')
+    );
+  }
+
+  const { channels, summary } = data;
+  const best  = channels.find(c => c.name === summary.bestChannel);
+  const worst = channels.find(c => c.name === summary.worstChannel);
+
+  return h('div', { className: 'dashboard-container' },
+    h('h1', { className: 'page-title' }, 'LTV by Acquisition Channel'),
+
+    // Stat cards
+    h('div', { className: 'stat-grid' },
+      h(StatCard, {
+        icon: '👥',
+        label: 'Total Customers',
+        value: summary.totalCustomers.toLocaleString(),
+        sub: 'across all channels'
+      }),
+      h(StatCard, {
+        icon: '📊',
+        label: 'Global Avg LTV',
+        value: fmt(summary.globalAvgLtv),
+        sub: 'per customer'
+      }),
+      h(StatCard, {
+        icon: '🏆',
+        label: 'Best Channel',
+        value: best ? best.name : summary.bestChannel,
+        sub: best ? fmt(best.avgLtv) + ' avg LTV' : ''
+      }),
+      h(StatCard, {
+        icon: '⚠️',
+        label: 'Worst Channel',
+        value: worst ? worst.name : summary.worstChannel,
+        sub: worst ? fmt(worst.avgLtv) + ' avg LTV' : ''
+      })
+    ),
+
+    // Table
+    h(ChannelTable, { channels, globalAvg: summary.globalAvgLtv }),
+
+    // Chart
+    h(LtvChart, { channels, globalAvg: summary.globalAvgLtv }),
+
+    // Connect CTA
+    h(ConnectCard)
+  );
+}
+
+// ── Mount ─────────────────────────────────────────────────────────────
+const rootEl = document.getElementById('root');
+ReactDOM.createRoot(rootEl).render(h(Dashboard));
+</script>
+
+</body>
+</html>
