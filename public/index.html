@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LTVChannel — LTV by Acquisition Channel for Indie SaaS</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <span class="nav-brand">LTV<span>Channel</span></span>
+  <div class="nav-links">
+    <a href="/docs">Docs</a>
+    <a href="/demo">Live Demo</a>
+    <a href="/demo" class="btn btn-green">Connect Stripe</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <h1>Know which channels grow <em>your best customers</em></h1>
+  <p>Connect Stripe. See LTV by acquisition channel. Answer in 60 seconds — no SQL, no spreadsheets, no data warehouse.</p>
+  <div class="hero-actions">
+    <a href="/demo" class="btn btn-green">Connect Stripe (Demo)</a>
+    <a href="/docs" class="btn btn-outline">View Docs →</a>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features">
+  <div class="feature-card">
+    <div class="feature-icon">⚡</div>
+    <h3>Stripe-native</h3>
+    <p>One OAuth click. We read your subscription history and UTM source metadata directly — no CSV exports, no ETL.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">🕐</div>
+    <h3>Retroactive analysis</h3>
+    <p>Instantly ranks every channel you've ever had — not just from today. See which sources sent your highest-LTV customers from day one.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">📬</div>
+    <h3>Weekly digest</h3>
+    <p>Get a Slack or email summary every Monday: which channels improved, which degraded, and what changed since last week.</p>
+  </div>
+</section>
+
+<!-- How it works -->
+<section style="max-width:700px;margin:0 auto 4rem;padding:0 2rem;text-align:center;">
+  <h2 style="font-size:1.6rem;font-weight:800;margin-bottom:.5rem;">How it works</h2>
+  <p style="color:var(--gray4);margin-bottom:2rem;">Three steps. No engineering required.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1.5rem;text-align:left;">
+    <div style="display:flex;gap:.75rem;align-items:flex-start;">
+      <span style="background:var(--navy);color:var(--green);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;flex-shrink:0;">1</span>
+      <div>
+        <strong style="font-size:.9rem;">Connect Stripe</strong>
+        <p style="font-size:.83rem;color:var(--gray4);margin-top:.25rem;">OAuth in one click. Read-only access to customers + subscriptions.</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:.75rem;align-items:flex-start;">
+      <span style="background:var(--navy);color:var(--green);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;flex-shrink:0;">2</span>
+      <div>
+        <strong style="font-size:.9rem;">Add 5-line snippet</strong>
+        <p style="font-size:.83rem;color:var(--gray4);margin-top:.25rem;">Paste our JS snippet on your site. It auto-captures UTM params into Stripe metadata.</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:.75rem;align-items:flex-start;">
+      <span style="background:var(--navy);color:var(--green);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;flex-shrink:0;">3</span>
+      <div>
+        <strong style="font-size:.9rem;">See your rankings</strong>
+        <p style="font-size:.83rem;color:var(--gray4);margin-top:.25rem;">Your dashboard auto-populates with LTV ranked by channel — retroactively.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section class="pricing-section">
+  <h2>Simple, transparent pricing</h2>
+  <p>Start free. Upgrade when you're ready to double down on your best channels.</p>
+
+  <div class="pricing-grid">
+    <!-- Free -->
+    <div class="pricing-card">
+      <h3>Free</h3>
+      <div class="pricing-price">$0 <span>/ mo</span></div>
+      <p class="pricing-desc">For founders just getting started</p>
+      <ul class="pricing-features">
+        <li>Up to 100 customers</li>
+        <li>5 channels tracked</li>
+        <li>30-day history</li>
+        <li>Manual refresh</li>
+      </ul>
+      <a href="/demo" class="btn btn-outline" style="width:100%;text-align:center;">Get Started Free</a>
+    </div>
+
+    <!-- Starter -->
+    <div class="pricing-card featured">
+      <h3>Starter</h3>
+      <div class="pricing-price">$19 <span>/ mo</span></div>
+      <p class="pricing-desc">For growing indie SaaS products</p>
+      <ul class="pricing-features">
+        <li>Up to 1,000 customers</li>
+        <li>Unlimited channels</li>
+        <li>Full history</li>
+        <li>Weekly email digest</li>
+        <li>CSV export</li>
+      </ul>
+      <a href="/demo" class="btn btn-green" style="width:100%;text-align:center;">Start Free Trial</a>
+    </div>
+
+    <!-- Growth -->
+    <div class="pricing-card">
+      <h3>Growth</h3>
+      <div class="pricing-price">$49 <span>/ mo</span></div>
+      <p class="pricing-desc">For scaling teams with multiple products</p>
+      <ul class="pricing-features">
+        <li>Unlimited customers</li>
+        <li>Multiple Stripe accounts</li>
+        <li>Slack notifications</li>
+        <li>API access</li>
+        <li>Priority support</li>
+      </ul>
+      <a href="/demo" class="btn btn-outline" style="width:100%;text-align:center;">Contact Sales</a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <p>© 2026 LTVChannel · <a href="/docs">Docs</a> · <a href="/demo">Demo</a> · Built for indie SaaS founders</p>
+</footer>
+
+</body>
+</html>
