@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LTVChannel — Docs & JS Snippet</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <a href="/" class="nav-brand" style="text-decoration:none;">LTV<span>Channel</span></a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/demo">Dashboard</a>
+    <a href="/docs" style="color:var(--green);font-weight:600;">Docs</a>
+  </div>
+</nav>
+
+<div class="docs-container">
+  <h1>Integration Docs</h1>
+  <p class="lead">Everything you need to start capturing UTM attribution in Stripe — in under 5 minutes.</p>
+
+  <!-- Quick start -->
+  <div class="docs-section">
+    <h2>1. Add the JS snippet to your site</h2>
+    <p style="color:var(--gray4);font-size:.9rem;margin-bottom:.75rem;">
+      Paste this snippet in the <code style="background:var(--gray1);border-radius:4px;padding:.1rem .4rem;font-size:.82rem;">&lt;head&gt;</code>
+      of every page on your marketing site (before your checkout redirect).
+      It reads UTM parameters from the URL and stores them in <code style="background:var(--gray1);border-radius:4px;padding:.1rem .4rem;font-size:.82rem;">localStorage</code>.
+    </p>
+
+    <div class="code-block" id="snippet-block">
+      <button class="copy-btn" onclick="copySnippet()">Copy</button>
+<pre>&lt;script&gt;
+(function() {
+  var p = new URLSearchParams(window.location.search);
+  var keys = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
+  keys.forEach(function(k) { if (p.get(k)) localStorage.setItem('ltvc_' + k, p.get(k)); });
+})();
+&lt;/script&gt;</pre>
+    </div>
+    <p style="color:var(--gray4);font-size:.82rem;margin-top:.6rem;">
+      5 lines. No external requests. GDPR-safe (localStorage only, no cookies).
+    </p>
+  </div>
+
+  <!-- Stripe metadata -->
+  <div class="docs-section">
+    <h2>2. Send UTM data to Stripe at checkout</h2>
+    <p style="color:var(--gray4);font-size:.9rem;margin-bottom:.75rem;">
+      When you create a Stripe Customer or Checkout Session, read the stored UTM values and attach them as
+      <a href="https://stripe.com/docs/metadata" target="_blank" rel="noopener">Stripe metadata</a>.
+    </p>
+
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyElement(this)">Copy</button>
+<pre>// Node.js example — run server-side at checkout
+const utmKeys = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
+const utmData = {};
+utmKeys.forEach(k => {
+  // Pass these from your frontend via a hidden form field or API param
+  if (req.body['ltvc_' + k]) utmData[k] = req.body['ltvc_' + k];
+});
+
+const customer = await stripe.customers.create({
+  email: req.body.email,
+  metadata: {
+    ltvc_utm_source:   utmData.utm_source   || 'direct',
+    ltvc_utm_medium:   utmData.utm_medium   || '(none)',
+    ltvc_utm_campaign: utmData.utm_campaign || '(none)',
+  }
+});</pre>
+    </div>
+  </div>
+
+  <!-- Frontend bridge -->
+  <div class="docs-section">
+    <h2>3. Bridge localStorage to your checkout form</h2>
+    <p style="color:var(--gray4);font-size:.9rem;margin-bottom:.75rem;">
+      Add hidden inputs to your checkout form to pass the stored values server-side.
+    </p>
+
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyElement(this)">Copy</button>
+<pre>&lt;script&gt;
+// Add to your checkout page — populates hidden fields automatically
+['utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach(function(k) {
+  var val = localStorage.getItem('ltvc_' + k);
+  if (val) {
+    var inp = document.getElementById('field_' + k);
+    if (inp) inp.value = val;
+  }
+});
+&lt;/script&gt;
+
+&lt;!-- Hidden form fields --&gt;
+&lt;input type="hidden" id="field_utm_source"   name="ltvc_utm_source" /&gt;
+&lt;input type="hidden" id="field_utm_medium"   name="ltvc_utm_medium" /&gt;
+&lt;input type="hidden" id="field_utm_campaign" name="ltvc_utm_campaign" /&gt;</pre>
+    </div>
+  </div>
+
+  <!-- Metadata reference -->
+  <div class="docs-section">
+    <h2>Stripe metadata field reference</h2>
+    <p style="color:var(--gray4);font-size:.9rem;margin-bottom:.75rem;">
+      LTVChannel reads these metadata keys from Stripe Customer objects. All keys are prefixed with
+      <code style="background:var(--gray1);border-radius:4px;padding:.1rem .4rem;font-size:.82rem;">ltvc_</code>
+      to avoid collisions with your existing metadata.
+    </p>
+
+    <table class="metadata-table">
+      <thead>
+        <tr>
+          <th>Metadata Key</th>
+          <th>Maps To</th>
+          <th>Example Value</th>
+          <th>Required?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>ltvc_utm_source</code></td>
+          <td>Acquisition channel</td>
+          <td><code>google</code>, <code>twitter</code>, <code>producthunt</code></td>
+          <td>Yes — primary grouping key</td>
+        </tr>
+        <tr>
+          <td><code>ltvc_utm_medium</code></td>
+          <td>Channel medium</td>
+          <td><code>cpc</code>, <code>organic</code>, <code>referral</code></td>
+          <td>Recommended</td>
+        </tr>
+        <tr>
+          <td><code>ltvc_utm_campaign</code></td>
+          <td>Campaign name</td>
+          <td><code>summer-launch</code>, <code>ph-day1</code></td>
+          <td>Optional</td>
+        </tr>
+        <tr>
+          <td><code>ltvc_utm_content</code></td>
+          <td>Ad variant / link</td>
+          <td><code>hero-cta</code>, <code>blog-sidebar</code></td>
+          <td>Optional</td>
+        </tr>
+        <tr>
+          <td><code>ltvc_utm_term</code></td>
+          <td>Paid search keyword</td>
+          <td><code>stripe analytics</code></td>
+          <td>Optional</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- API reference -->
+  <div class="docs-section">
+    <h2>API reference</h2>
+
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+
+      <div style="background:var(--white);border-radius:var(--radius);padding:1.25rem;box-shadow:var(--shadow);">
+        <div style="display:flex;gap:.75rem;align-items:center;margin-bottom:.5rem;">
+          <span style="background:#dcfce7;color:#15803d;border-radius:4px;padding:.2rem .5rem;font-size:.75rem;font-weight:700;font-family:monospace;">GET</span>
+          <code style="font-size:.9rem;">/api/health</code>
+        </div>
+        <p style="font-size:.85rem;color:var(--gray4);">Returns service health status. Use for uptime monitoring.</p>
+        <div class="code-block" style="margin-top:.75rem;font-size:.8rem;">
+          <pre>{ "status": "ok", "version": "0.1.0" }</pre>
+        </div>
+      </div>
+
+      <div style="background:var(--white);border-radius:var(--radius);padding:1.25rem;box-shadow:var(--shadow);">
+        <div style="display:flex;gap:.75rem;align-items:center;margin-bottom:.5rem;">
+          <span style="background:#dcfce7;color:#15803d;border-radius:4px;padding:.2rem .5rem;font-size:.75rem;font-weight:700;font-family:monospace;">GET</span>
+          <code style="font-size:.9rem;">/api/demo-data</code>
+        </div>
+        <p style="font-size:.85rem;color:var(--gray4);">Returns mock channel LTV data for the demo dashboard. No auth required.</p>
+      </div>
+
+      <div style="background:var(--white);border-radius:var(--radius);padding:1.25rem;box-shadow:var(--shadow);">
+        <div style="display:flex;gap:.75rem;align-items:center;margin-bottom:.5rem;">
+          <span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:.2rem .5rem;font-size:.75rem;font-weight:700;font-family:monospace;">POST</span>
+          <code style="font-size:.9rem;">/api/connect</code>
+        </div>
+        <p style="font-size:.85rem;color:var(--gray4);">Initiates Stripe OAuth connection. In production, this starts the OAuth redirect flow.</p>
+        <div class="code-block" style="margin-top:.75rem;font-size:.8rem;">
+<pre>// Request body
+{ "stripeKey": "sk_live_..." }
+
+// Response
+{ "status": "connected", "message": "Stripe connected (demo mode)" }</pre>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="docs-section">
+    <h2>FAQ</h2>
+    <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+      <div>
+        <strong style="font-size:.92rem;">Does this work for customers who arrived before I added the snippet?</strong>
+        <p style="font-size:.87rem;color:var(--gray4);margin-top:.3rem;">Yes — retroactively for customers with existing UTM metadata in Stripe. For customers without metadata, we fall back to grouping them under a <code style="background:var(--gray1);border-radius:4px;padding:.1rem .3rem;font-size:.8rem;">direct</code> channel.</p>
+      </div>
+
+      <div>
+        <strong style="font-size:.92rem;">Is the JS snippet GDPR-compliant?</strong>
+        <p style="font-size:.87rem;color:var(--gray4);margin-top:.3rem;">It uses <code style="background:var(--gray1);border-radius:4px;padding:.1rem .3rem;font-size:.8rem;">localStorage</code>, not cookies, and makes no external network requests. UTM values are considered non-personal data. Consult your DPO for your specific context.</p>
+      </div>
+
+      <div>
+        <strong style="font-size:.92rem;">What Stripe permissions do you request?</strong>
+        <p style="font-size:.87rem;color:var(--gray4);margin-top:.3rem;">Read-only access to Customers and Subscriptions. We never request write access, payment method data, or payout account information.</p>
+      </div>
+
+      <div>
+        <strong style="font-size:.92rem;">How is LTV calculated?</strong>
+        <p style="font-size:.87rem;color:var(--gray4);margin-top:.3rem;">LTV = sum of all invoice amounts paid by a customer across their entire Stripe lifetime. For active subscriptions we use actual paid revenue, not projected.</p>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <p>© 2026 LTVChannel · <a href="/">Home</a> · <a href="/demo">Dashboard</a> · Built for indie SaaS founders</p>
+</footer>
+
+<script>
+function copySnippet() {
+  const code = document.querySelector('#snippet-block pre').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    var btn = document.querySelector('#snippet-block .copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+  });
+}
+
+function copyElement(btn) {
+  var pre = btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.textContent).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+  });
+}
+</script>
+
+</body>
+</html>
